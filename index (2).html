@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TrustVest – Single File Dashboard (with PDF & Reference validation)</title>
+  <style>
+    :root{
+      --bg:#0f172a; --text:#f8fafc; --accent:#38bdf8; --card-bg:rgba(255,255,255,0.05); --light:rgba(255,255,255,0.08);
+      --white:#ffffff; --muted:#9aa7b2; --success:#22c55e; --danger:#ef4444;
+      --outline-blue: #0ea5e9;
+    }
+    *{box-sizing:border-box;font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);line-height:1.5;padding-bottom:140px}
+    header{display:flex;justify-content:space-between;align-items:center;padding:18px 8%;background:var(--card-bg);position:sticky;top:0;z-index:50;backdrop-filter:blur(6px)}
+    header h1{color:var(--accent);font-size:1.25rem}
+    nav a{color:var(--text);text-decoration:none;margin-left:14px;font-weight:500}
+    nav a:hover{color:var(--accent)}
+    .hero{padding:70px 6% 40px;text-align:center;background:radial-gradient(circle at top, rgba(56,189,248,0.08), transparent)}
+    .hero h2{color:var(--accent);font-size:2rem;margin-bottom:8px}
+    .hero p{max-width:720px;margin:0 auto 20px;opacity:.95}
+    .btn{background:var(--accent);color:var(--bg);padding:10px 16px;border-radius:8px;border:none;cursor:pointer;font-weight:600}
+    .btn:active{transform:translateY(1px)}
+    .btn-outline{
+      background:transparent;color:var(--white);padding:10px 16px;border-radius:8px;border:2px solid var(--outline-blue);cursor:pointer;font-weight:700;
+    }
+    .btn-outline:hover{background:rgba(14,165,233,0.06)}
+    .container{padding:40px 6%}
+    .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:28px}
+    .plan{background:var(--card-bg);padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(56,189,248,0.06)}
+    .plan h3{color:var(--accent);margin-bottom:6px}
+    .plan p{margin:6px 0;color:var(--text)}
+    .plan .rate{font-weight:700;margin-top:8px}
+    /* Dashboard */
+    .dashboard{max-width:980px;margin:0 auto;background:var(--card-bg);padding:18px;border-radius:12px}
+    .dashboard-grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+    .card{background:transparent;padding:14px;border-radius:10px}
+    .balance{font-size:1.6rem;font-weight:700;color:var(--accent);margin-top:6px}
+    .small{font-size:.95rem;color:var(--muted)}
+    .profit-bar{margin-top:12px;background:var(--light);padding:12px;border-radius:10px;color:var(--text)}
+    /* History tables */
+    table{width:100%;border-collapse:collapse;margin-top:12px;color:var(--text)}
+    table th, table td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:left}
+    table th{background:linear-gradient(90deg, rgba(56,189,248,0.12), rgba(56,189,248,0.04));color:var(--bg);padding:10px;border-radius:6px}
+    .history-section{margin-top:18px;background:var(--card-bg);padding:12px;border-radius:10px}
+    /* Modals */
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:120;justify-content:center;align-items:center;padding:16px}
+    .modal.active{display:flex}
+    .modal-box{background:var(--white);color:#000;border-radius:12px;padding:18px;max-width:720px;width:100%;box-shadow:0 18px 60px rgba(2,6,23,0.5)}
+    .modal-box h3{color:#0ea5e9;margin-bottom:8px}
+    .input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #d1d5db;margin-bottom:10px}
+    .bank-list{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+    .bank-item{padding:8px 12px;border-radius:10px;border:1px solid #e6eef6;background:#f8fbff;cursor:pointer;color:#024a6a;font-weight:600}
+    .bank-item.selected{background:#0ea5e9;color:#fff;border-color:transparent}
+    .row{display:flex;gap:12px}
+    .col{flex:1}
+    .muted{color:#6b7280;font-size:.92rem}
+    .success-msg{background:rgba(34,197,94,0.12);border-left:4px solid var(--success);padding:10px;border-radius:6px;color:var(--success);margin-top:10px}
+    .error-msg{background:rgba(239,68,68,0.08);border-left:4px solid var(--danger);padding:10px;border-radius:6px;color:var(--danger);margin-top:10px}
+    /* About TrustVest (solid blue) */
+    .about-card{background:#0b5fa8;color:#fff;padding:28px 6%;border-radius:12px;margin:28px 6% 12px;box-shadow:0 10px 30px rgba(11,95,168,0.25);display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+    .about-card .about-content{max-width:980px;margin:0 auto}
+    .about-card h3{font-size:1.25rem;margin-bottom:8px}
+    .about-card p{margin:6px 0;line-height:1.5;color:rgba(255,255,255,0.95)}
+    .about-bullets{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+    .about-bullet{display:flex;gap:10px;align-items:flex-start}
+    .about-bullet .dot{min-width:10px;height:10px;border-radius:50%;background:#fff;margin-top:6px;opacity:0.95}
+    .about-cta{margin-top:14px}
+    .about-cta .btn{background:#fff;color:#0b5fa8;font-weight:700}
+    /* Bottom-center sliding notification (slow, smooth) */
+    .tv-notif-wrap{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;z-index:9999;pointer-events:none;display:flex;align-items:center;justify-content:center}
+    .tv-notif{
+      min-width:260px; max-width:520px;
+      background:var(--accent); color:#fff;
+      padding:10px 14px; border-radius:12px; box-shadow:0 18px 40px rgba(56,189,248,0.18);
+      display:flex; gap:10px; align-items:center; font-weight:600; font-size:0.95rem;
+      transform:translateY(120%); opacity:0;
+      transition: transform 2000ms cubic-bezier(.2,.9,.3,1), opacity 1600ms ease;
+      pointer-events:auto;
+    }
+    .tv-notif.show{ transform:translateY(0); opacity:1; }
+    .tv-notif .icon{font-size:1.05rem}
+    .tv-notif .msg{flex:1; color:#fff; font-weight:600; font-size:0.95rem}
+    @media(max-width:480px){
+      .tv-notif{width:90vw; max-width:90vw; font-size:0.9rem}
+    }
+    /* Centered withdrawal success toast (fade + scale) */
+    .center-toast{
+      position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.8);
+      background:var(--accent); color:#fff; padding:14px 18px; border-radius:12px;
+      box-shadow:0 20px 50px rgba(2,6,23,0.6); z-index:2000; opacity:0;
+      display:flex; gap:12px; align-items:center; pointer-events:none;
+      transition: transform 360ms cubic-bezier(.2,.9,.3,1), opacity 360ms ease;
+      font-weight:700; font-size:1rem;
+    }
+    .center-toast.show{ opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
+    .center-toast .ct-sub{font-weight:600;font-size:0.95rem;opacity:0.95}
+    /* Centered deposit success toast (white, deep white with blue text) */
+    .center-deposit{
+      position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.8);
+      background:#ffffff; color:#0b5fa8; padding:14px 18px; border-radius:12px;
+      box-shadow:0 20px 50px rgba(2,6,23,0.25); z-index:2001; opacity:0;
+      display:flex; gap:12px; align-items:center; pointer-events:none;
+      transition: transform 360ms cubic-bezier(.2,.9,.3,1), opacity 360ms ease;
+      font-weight:800; font-size:1rem;
+    }
+    .center-deposit.show{ opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
+    .center-deposit .cd-sub{font-weight:600;font-size:0.95rem;opacity:0.95}
+    @media(max-width:420px){ .center-toast,.center-deposit{width:90vw;padding:12px 14px;font-size:0.95rem} }
+    /* responsive */
+    @media(max-width:900px){.dashboard-grid{grid-template-columns:1fr}.about-card{padding:20px}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>TrustVest</h1>
+    <nav>
+      <a href="#plans" onclick="document.getElementById('plansSection').scrollIntoView({behavior:'smooth'})">Plans</a>
+      <a href="#dashboard" onclick="document.getElementById('dashboardSection').scrollIntoView({behavior:'smooth'})">Dashboard</a>
+      <a href="#history" onclick="document.getElementById('historySection').scrollIntoView({behavior:'smooth'})">History</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h2>Invest Smarter with TrustVest 💼</h2>
+    <p>Click a plan to deposit. Your investment will appear on the dashboard and grow automatically each second according to the plan daily rate.</p>
+    <button class="btn" onclick="document.getElementById('plansSection').scrollIntoView({behavior:'smooth'})">Start Investing</button>
+  </section>
+
+  <div class="container" id="plansSection">
+    <h2 style="color:var(--accent);margin-bottom:10px">Investment Plans</h2>
+    <div class="plans" id="plansList">
+      <div class="plan">
+        <h3>Bronze Plan</h3>
+        <p class="small">Minimum: ₦5,000</p>
+        <p class="rate">10% Daily</p>
+        <button class="btn" onclick="openDepositModal('Bronze',5000,10)">Invest Now</button>
+      </div>
+      <div class="plan">
+        <h3>Silver Plan</h3>
+        <p class="small">Minimum: ₦15,000</p>
+        <p class="rate">15% Daily</p>
+        <button class="btn" onclick="openDepositModal('Silver',15000,15)">Invest Now</button>
+      </div>
+      <div class="plan">
+        <h3>Gold Plan</h3>
+        <p class="small">Minimum: ₦30,000</p>
+        <p class="rate">25% Daily</p>
+        <button class="btn" onclick="openDepositModal('Gold',30000,25)">Invest Now</button>
+      </div>
+      <div class="plan">
+        <h3>Diamond Plan</h3>
+        <p class="small">Minimum: ₦50,000</p>
+        <p class="rate">35% Daily</p>
+        <button class="btn" onclick="openDepositModal('Diamond',50000,35)">Invest Now</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" id="dashboardSection">
+    <div class="dashboard">
+      <div class="dashboard-grid">
+        <div class="card">
+          <h3 class="small">Total Balance</h3>
+          <div class="balance" id="totalBalance">₦0</div>
+          <div class="muted">Available to withdraw: <span id="availableBalance">₦0</span></div>
+
+          <div class="profit-bar">
+            <p><strong>Total Deposited:</strong> <span id="totalDeposited">₦0</span></p>
+            <p><strong>Daily Profit Rate (avg):</strong> <span id="avgDailyRate">0%</span></p>
+            <p><strong>Profit Earned (so far):</strong> <span id="profitSoFar">₦0</span></p>
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" onclick="document.getElementById('depositModalBtn').click()">New Deposit</button>
+            <button class="btn" onclick="openWithdrawModal()">Withdraw</button>
+            <button class="btn" onclick="document.getElementById('historySection').scrollIntoView({behavior:'smooth'})">View History</button>
+          </div>
+
+          <div id="messageArea" style="margin-top:10px"></div>
+        </div>
+
+        <div class="card" style="background:var(--card-bg);border-radius:10px">
+          <h4 style="color:var(--accent)">Active Investments</h4>
+          <div id="investmentsList" class="muted" style="margin-top:8px">No active investments yet.</div>
+        </div>
+      </div>
+
+      <!-- History tables -->
+      <div class="history-section" id="historySection" style="margin-top:18px">
+        <h3 style="color:var(--accent)">Transaction History</h3>
+        <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn" onclick="renderDepositHistory()">Deposit History</button>
+          <button class="btn" onclick="renderWithdrawalHistory()">Withdrawal History</button>
+          <button class="btn" onclick="renderAllHistory()">All</button>
+        </div>
+
+        <div id="historyTables" style="margin-top:12px">
+          <!-- History tables inserted here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- About TrustVest (bottom) -->
+  <section class="about-card" id="aboutTrustVest">
+    <div class="about-content">
+      <h3>💼 About TrustVest</h3>
+      <p><strong>Your funds are safe with us.</strong> TrustVest was built to give everyday investors a secure, reliable way to grow their savings. We prioritize transparency, responsible management, and fast access to your funds.</p>
+
+      <div class="about-bullets">
+        <div class="about-bullet"><span class="dot"></span><p><strong>Legit & Transparent Returns:</strong> Every plan clearly shows daily returns so you know exactly what to expect — daily, weekly, and monthly projections are shown before you deposit.</p></div>
+        <div class="about-bullet"><span class="dot"></span><p><strong>Secure & Trusted:</strong> We use secure processes and best practices to protect your funds. Withdrawals and transaction history are tracked so you stay in control.</p></div>
+        <div class="about-bullet"><span class="dot"></span><p><strong>Professional Support:</strong> Our team is available to help and guide you through deposits, withdrawals, and any questions — clear, friendly, and professional service.</p></div>
+        <div class="about-bullet"><span class="dot"></span><p><strong>Designed for Growth:</strong> Plans are built to help your savings grow; choose a plan that fits your goals and track progress in real-time on your dashboard.</p></div>
+      </div>
+
+      <div class="about-cta">
+        <p style="margin-top:10px">Start small or go big — you remain in control. Your investment, your choice, backed by clear data and simple tools.</p>
+        <button class="btn" onclick="document.getElementById('plansSection').scrollIntoView({behavior:'smooth'})">Explore Plans</button>
+      </div>
+    </div>
+  </section>
+
+  <footer style="padding:20px 6%;margin-top:28px">
+    <small style="color:var(--muted)">&copy; <span id="year"></span> TrustVest. All rights reserved.</small>
+  </footer>
+
+  <!-- Deposit Modal -->
+  <div class="modal" id="depositModal" aria-hidden="true">
+    <div class="modal-box">
+      <h3 id="depositModalTitle">Deposit to Plan</h3>
+      <div id="depositModalBody">
+        <p class="muted">Bank: <strong>Palmpay</strong></p>
+        <p class="muted">Account: <strong>Orire Oluwatobiloba James</strong></p>
+        <p class="muted">Account No: <strong>9074808085</strong></p>
+
+        <label class="muted" style="font-weight:600;margin-top:8px">Your Name</label>
+        <input class="input" id="depositNameInput" type="text" placeholder="Enter your name" />
+
+        <label class="muted" style="font-weight:600;margin-top:8px">Amount (₦)</label>
+        <input class="input" id="depositAmountInput" type="number" placeholder="Enter amount" oninput="updateEarningsPreview()" />
+
+        <!-- Reference code input -->
+        <label class="muted" style="font-weight:600;margin-top:8px">Reference Code (from receipt)</label>
+        <input class="input" id="depositRefInput" type="text" placeholder="Enter receipt reference code (required)" />
+
+        <!-- Receipt PDF upload -->
+        <label class="muted" style="font-weight:600;margin-top:8px">Receipt PDF (required)</label>
+        <input class="input" id="receiptFileInput" type="file" accept="application/pdf" />
+
+        <!-- Instruction text as requested -->
+        <div class="muted" style="margin:8px 0;font-weight:600">Drop your receipt pdf on telegram before submitting deposit.</div>
+
+        <div id="depositValidation" class="muted" style="margin-bottom:8px">Minimum: ₦0</div>
+
+        <div id="earningsPreview" style="background:#f1f5f9;padding:10px;border-radius:8px;margin-bottom:10px;display:none">
+          <p style="font-weight:600;color:#0ea5e9;margin-bottom:6px">Earnings Projection:</p>
+          <p class="muted" id="dailyEarning">Daily: ₦0</p>
+          <p class="muted" id="weeklyEarning">Weekly: ₦0</p>
+          <p class="muted" id="monthlyEarning">Monthly: ₦0</p>
+        </div>
+
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn" id="confirmDepositBtn">Confirm Deposit</button>
+          <button class="btn-outline" onclick="cancelDeposit()">Cancel</button>
+        </div>
+
+        <div id="depositResultMsg" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Withdraw Modal -->
+  <div class="modal" id="withdrawModal" aria-hidden="true">
+    <div class="modal-box">
+      <h3>Withdraw Funds</h3>
+      <p class="muted">Select a bank</p>
+      <div class="bank-list" id="bankList"></div>
+
+      <div style="margin-top:8px">
+        <label class="muted">Account Name</label>
+        <input class="input" id="withdrawAccountName" placeholder="John Doe" />
+        <label class="muted">Account Number</label>
+        <input class="input" id="withdrawAccountNumber" placeholder="0123456789" />
+        <label class="muted">Amount (₦)</label>
+        <input class="input" id="withdrawAmountInput" type="number" placeholder="Enter amount" />
+        <div id="withdrawInfo" class="muted" style="margin-top:8px"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button class="btn" onclick="confirmWithdraw()">Request Withdraw</button>
+        <button class="btn-outline" onclick="cancelWithdraw()">Cancel</button>
+      </div>
+
+      <div id="withdrawResultMsg" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- Reference check modal (click Reference in history to validate against stored PDF) -->
+  <div class="modal" id="refCheckModal" aria-hidden="true">
+    <div class="modal-box">
+      <h3>Check Reference Against Receipt</h3>
+      <p class="muted" id="refCheckInfo">Enter reference code to check against the stored receipt PDF.</p>
+      <label class="muted" style="font-weight:600;margin-top:8px">Reference Code</label>
+      <input class="input" id="refCheckInput" type="text" placeholder="Paste or type reference code" />
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button class="btn" id="runRefCheckBtn">Check</button>
+        <button class="btn-outline" onclick="closeRefCheck()">Close</button>
+      </div>
+      <div id="refCheckResult" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- Hidden deposit opener -->
+  <button id="depositModalBtn" style="display:none" onclick="openDepositModal('Manual',0,0)"></button>
+
+  <!-- bottom-center notification element -->
+  <div class="tv-notif-wrap" aria-hidden="true">
+    <div id="tvNotif" class="tv-notif" role="status" aria-live="polite">
+      <div class="icon">💰</div>
+      <div class="msg" id="tvNotifMsg">Samuel James just received ₦50,000</div>
+    </div>
+  </div>
+
+  <!-- center withdrawal success toast -->
+  <div id="centerToast" class="center-toast" aria-hidden="true">
+    <div class="icon">💸</div>
+    <div>
+      <div style="font-weight:800">Withdrawal Successful</div>
+      <div class="ct-sub" id="centerToastSub">₦0 withdrawn successfully</div>
+    </div>
+  </div>
+
+  <!-- center deposit success toast (white) -->
+  <div id="centerDepositToast" class="center-deposit" aria-hidden="true">
+    <div class="icon">💰</div>
+    <div>
+      <div style="font-weight:800" id="centerDepositTitle">Deposit Successful</div>
+      <div class="cd-sub" id="centerDepositSub">₦0 deposited successfully</div>
+    </div>
+  </div>
+
+  <script>
+    // --- Initialization & storage helpers ---
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const BANKS = ['Palmpay','Opay','Moniepoint','Kuda','Access Bank','First Bank'];
+
+    const NAMES = [
+      "Tunde Adebayo","Chinwe Okafor","Ibrahim Musa","Blessing Johnson","Ifeanyi Ojo","Grace Udo",
+      "Ayo Bello","Samuel James","Samuel Peter","Ngozi Eze","Kemi Ogundele","Uche Nwankwo",
+      "Oluchi Amadi","Emeka Obi","Zainab Suleiman","Abdulrahman Bello","Funke Adeyemi",
+      "Chike Nnamdi","Hadiza Ibrahim","Sola Akin","Bolanle Ade","Ireti Adegoke","Fidelis Chukwu",
+      "Maryam Abdullahi","Victor Eze","Ruth Okoye","Ikechukwu Nwosu","Esther Okafor","Daniel Ayo",
+      "Hassan Ahmed","Abigail Nwachukwu","Oluwaseun Akinola","Chukwuemeka Kalu","Halima Yusuf",
+      "Precious Nwafor","Osas Ighodalo","Kudirat Balogun","Segun Adetayo","Emmanuel Nnamani","Lillian Chike"
+    ];
+
+    const storage = {
+      getInvestments(){ return JSON.parse(localStorage.getItem('tv_investments')||'[]') },
+      setInvestments(arr){ localStorage.setItem('tv_investments', JSON.stringify(arr)) },
+      getDeposits(){ return JSON.parse(localStorage.getItem('tv_deposits')||'[]') },
+      setDeposits(arr){ localStorage.setItem('tv_deposits', JSON.stringify(arr)) },
+      getWithdrawals(){ return JSON.parse(localStorage.getItem('tv_withdrawals')||'[]') },
+      setWithdrawals(arr){ localStorage.setItem('tv_withdrawals', JSON.stringify(arr)) },
+      getWithdrawnTotal(){ return parseFloat(localStorage.getItem('tv_withdrawn_total')||'0') },
+      setWithdrawnTotal(v){ localStorage.setItem('tv_withdrawn_total', v) }
+    };
+
+    // populate bank list
+    const bankListEl = document.getElementById('bankList');
+    let selectedBank = null;
+    BANKS.forEach(b=>{
+      const btn = document.createElement('div');
+      btn.className = 'bank-item';
+      btn.textContent = b;
+      btn.onclick = ()=>{
+        selectedBank = b;
+        document.querySelectorAll('.bank-item').forEach(x=>x.classList.remove('selected'));
+        btn.classList.add('selected');
+      };
+      bankListEl.appendChild(btn);
+    });
+
+    // --- PDF.js setup (for text extraction) ---
+    // We'll load pdf.js via CDN below; if it's not present, validation will show an informative error.
+    function pdfTextExtractFromArrayBuffer(arrayBuffer, maxPages=5){
+      return new Promise(async (resolve, reject) => {
+        try{
+          if(!window.pdfjsLib){
+            return reject(new Error('pdfjsLib not loaded'));
+          }
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+          const doc = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+          const totalPages = Math.min(doc.numPages, maxPages);
+          let text = '';
+          for(let p=1;p<=totalPages;p++){
+            const page = await doc.getPage(p);
+            const content = await page.getTextContent();
+            const strs = content.items.map(i=>i.str).join(' ');
+            text += '\n' + strs;
+          }
+          resolve(text);
+        }catch(err){
+          reject(err);
+        }
+      });
+    }
+
+    // --- Deposit modal flow (with depositor name + reference + pdf) ---
+    let depositingPlan = null, depositingMin = 0, depositingRate = 0;
+    function openDepositModal(plan, min, rate){
+      depositingPlan = plan;
+      depositingMin = min;
+      depositingRate = rate;
+      document.getElementById('depositModalTitle').innerText = `${plan} Plan Deposit`;
+      document.getElementById('depositAmountInput').value = '';
+      document.getElementById('depositNameInput').value = '';
+      document.getElementById('depositRefInput').value = '';
+      document.getElementById('receiptFileInput').value = '';
+      document.getElementById('depositValidation').innerText = `Minimum: ₦${min.toLocaleString()}`;
+      document.getElementById('depositResultMsg').innerHTML = '';
+      document.getElementById('earningsPreview').style.display = 'none';
+      openModal('depositModal');
+    }
+    function closeDepositModal(){ closeModal('depositModal'); }
+    function cancelDeposit(){
+      // reset fields and close
+      document.getElementById('depositNameInput').value = '';
+      document.getElementById('depositAmountInput').value = '';
+      document.getElementById('depositRefInput').value = '';
+      document.getElementById('receiptFileInput').value = '';
+      document.getElementById('earningsPreview').style.display = 'none';
+      closeDepositModal();
+    }
+
+    // helper to show modal messages
+    function showModalMessage(elId,type,msg){
+      const el = document.getElementById(elId);
+      if(!el) return;
+      if(type==='success') el.innerHTML = `<div class="success-msg">${msg}</div>`;
+      else el.innerHTML = `<div class="error-msg">${msg}</div>`;
+      setTimeout(()=>{ if(el) el.innerHTML = '' },3500);
+    }
+
+    // Validate PDF contents before finalizing deposit.
+    // The rules:
+    // - The uploaded PDF must be of MIME 'application/pdf'
+    // - The pdf's extracted text (first few pages) must contain the reference code (case-insensitive, whitespace normalized)
+    // - The pdf's extracted text must contain the depositor name (case-insensitive, whitespace normalized)
+    // - The pdf should contain some currency / amount (basic regex check)
+    // If pdfjsLib is not loaded, shows an error and refuses to auto-validate.
+    document.getElementById('confirmDepositBtn').addEventListener('click', async function(){
+      const name = document.getElementById('depositNameInput').value.trim();
+      const raw = document.getElementById('depositAmountInput').value;
+      const amt = parseFloat(raw);
+      const refCode = document.getElementById('depositRefInput').value.trim();
+      const fileInput = document.getElementById('receiptFileInput');
+      const file = fileInput && fileInput.files && fileInput.files[0];
+
+      if(!name){ showModalMessage('depositResultMsg','error','Enter your name'); return; }
+      if(!amt || amt <=0){ showModalMessage('depositResultMsg','error','Enter a valid amount'); return; }
+      if(depositingMin && amt < depositingMin){ showModalMessage('depositResultMsg','error',`Minimum for ${depositingPlan} is ₦${depositingMin.toLocaleString()}`); return; }
+      if(!refCode){ showModalMessage('depositResultMsg','error','Enter reference code (from receipt)'); return; }
+      if(!file){ showModalMessage('depositResultMsg','error','Upload the receipt PDF (required)'); return; }
+      if(file.type !== 'application/pdf'){ showModalMessage('depositResultMsg','error','Receipt must be a PDF file'); return; }
+
+      // read file as arrayBuffer for pdf.js extraction
+      const reader = new FileReader();
+      reader.onload = async function(e){
+        const arrayBuffer = e.target.result;
+        // attempt extraction using pdf.js
+        try{
+          if(!window.pdfjsLib){
+            showModalMessage('depositResultMsg','error','PDF.js not loaded. Cannot validate PDF content. Make sure the browser allows external scripts or include PDF.js.');
+            return;
+          }
+          const extractedText = await pdfTextExtractFromArrayBuffer(arrayBuffer, 6);
+          const txtNorm = normalizeText(extractedText);
+          const refNorm = normalizeText(refCode);
+          const nameNorm = normalizeText(name);
+
+          const refFound = txtNorm.includes(refNorm);
+          const nameFound = txtNorm.includes(nameNorm);
+          const currencyFound = /₦|\bngn\b|\bnaira\b|[0-9]{2,3}(?:[,\.][0-9]{2,})?/i.test(extractedText);
+
+          const fails = [];
+          if(!refFound) fails.push('Reference code not found in PDF.');
+          if(!nameFound) fails.push('Depositor name not found in PDF (must match exact name used on site).');
+          if(!currencyFound) fails.push('No obvious currency/amount found in PDF — not clearly a payment receipt.');
+
+          if(fails.length){
+            // show details and do not finalize
+            showModalMessage('depositResultMsg','error', 'Validation failed: ' + fails.join(' '));
+            return;
+          }
+
+          // All good — convert to dataURL and finalize
+          const blob = new Blob([arrayBuffer], {type:'application/pdf'});
+          const dataUrl = await blobToDataURL(blob);
+          finalizeDepositWithValidation(name, amt, refCode, file.name, dataUrl);
+        }catch(err){
+          console.error('PDF validation error', err);
+          showModalMessage('depositResultMsg','error','Failed to extract text from PDF. If your receipt is image-only (scanned) it cannot be auto-validated here.');
+        }
+      };
+      reader.onerror = function(){
+        showModalMessage('depositResultMsg','error','Failed to read receipt file'); return;
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    // Helper to finalize and store deposit once validated
+    function finalizeDepositWithValidation(name, amt, refCode, receiptFileName, receiptDataUrl){
+      // store investment with depositorName
+      const investments = storage.getInvestments();
+      investments.push({
+        id: 'inv_' + Date.now(),
+        plan: depositingPlan,
+        principal: amt,
+        rate: depositingRate,
+        start: Date.now(),
+        depositorName: name
+      });
+      storage.setInvestments(investments);
+
+      // store deposit history with depositorName, refCode, receipt info
+      const deposits = storage.getDeposits();
+      deposits.unshift({
+        date: new Date().toLocaleString(),
+        plan: depositingPlan,
+        amount: amt,
+        depositorName: name,
+        refCode: refCode || '',
+        receiptFileName: receiptFileName || '',
+        receiptDataUrl: receiptDataUrl || ''
+      });
+      storage.setDeposits(deposits);
+
+      // Show modal message, close modal
+      showModalMessage('depositResultMsg','success',`₦${formatNumber(amt)} deposited to ${depositingPlan} plan`);
+      closeDepositModal();
+
+      // Show center white deposit toast with depositor name and plan
+      const depositTitle = `${name} deposited to ${depositingPlan}`;
+      document.getElementById('centerDepositTitle').textContent = depositTitle;
+      const centerDepositSubText = `₦${formatNumber(amt)} deposited successfully`;
+      showCenterDepositSuccess(amt, depositTitle, centerDepositSubText);
+
+      // Clear deposit inputs and earnings preview (reset after success)
+      setTimeout(()=> {
+        document.getElementById('depositNameInput').value = '';
+        document.getElementById('depositAmountInput').value = '';
+        document.getElementById('depositRefInput').value = '';
+        document.getElementById('receiptFileInput').value = '';
+        document.getElementById('earningsPreview').style.display = 'none';
+      }, 400);
+
+      showMessage(`₦${formatNumber(amt)} deposited to ${depositingPlan} by ${name}`);
+      refreshAll();
+    }
+
+    // --- Withdraw flow ---
+    function openWithdrawModal(){
+      selectedBank = null;
+      document.getElementById('withdrawAccountName').value = '';
+      document.getElementById('withdrawAccountNumber').value = '';
+      document.getElementById('withdrawAmountInput').value = '';
+      document.getElementById('withdrawResultMsg').innerHTML = '';
+      document.querySelectorAll('.bank-item').forEach(x=>x.classList.remove('selected'));
+      document.getElementById('withdrawInfo').innerText = `Available: ₦${formatNumber(getAvailableBalance())}`;
+      openModal('withdrawModal');
+    }
+    function closeWithdrawModal(){ closeModal('withdrawModal'); }
+    function cancelWithdraw(){
+      // reset fields and close
+      document.getElementById('withdrawAccountName').value = '';
+      document.getElementById('withdrawAccountNumber').value = '';
+      document.getElementById('withdrawAmountInput').value = '';
+      closeWithdrawModal();
+    }
+
+    function confirmWithdraw(){
+      const accName = document.getElementById('withdrawAccountName').value.trim();
+      const accNo = document.getElementById('withdrawAccountNumber').value.trim();
+      const amt = parseFloat(document.getElementById('withdrawAmountInput').value);
+      const available = getAvailableBalance();
+
+      if(!selectedBank){ showModalMessage('withdrawResultMsg','error','Select a bank'); return; }
+      if(!accName){ showModalMessage('withdrawResultMsg','error','Enter account name'); return; }
+      if(!accNo || accNo.length < 5){ showModalMessage('withdrawResultMsg','error','Enter a valid account number'); return; }
+      if(!amt || amt <= 0){ showModalMessage('withdrawResultMsg','error','Enter withdrawal amount'); return; }
+      if(amt > available){ showModalMessage('withdrawResultMsg','error','Insufficient available balance'); return; }
+
+      const withdrawals = storage.getWithdrawals();
+      withdrawals.unshift({date:new Date().toLocaleString(), bank:selectedBank, accountName:accName, accountNumber:accNo, amount:amt});
+      storage.setWithdrawals(withdrawals);
+
+      // Deduct by increasing withdrawn total (this reduces available balance)
+      const prev = storage.getWithdrawnTotal();
+      storage.setWithdrawnTotal(prev + amt);
+
+      showModalMessage('withdrawResultMsg','success',`Withdrawal of ₦${formatNumber(amt)} requested to ${selectedBank}`);
+      // Close modal first
+      closeWithdrawModal();
+      // Show center toast (fade + scale)
+      showCenterWithdrawalSuccess(amt);
+
+      // Clear withdraw inputs after success (reset)
+      setTimeout(()=> {
+        document.getElementById('withdrawAccountName').value = '';
+        document.getElementById('withdrawAccountNumber').value = '';
+        document.getElementById('withdrawAmountInput').value = '';
+      }, 400);
+
+      showMessage(`Withdrawal of ₦${formatNumber(amt)} requested to ${selectedBank}`);
+      refreshAll();
+    }
+
+    // --- Modal helpers & messages ---
+    function openModal(id){ document.getElementById(id).classList.add('active'); document.getElementById(id).setAttribute('aria-hidden','false'); }
+    function closeModal(id){ document.getElementById(id).classList.remove('active'); document.getElementById(id).setAttribute('aria-hidden','true'); }
+    function showMessage(msg){
+      const area = document.getElementById('messageArea');
+      area.innerHTML = `<div class="success-msg">${msg}</div>`;
+      setTimeout(()=> area.innerHTML = '',3500);
+    }
+
+    // --- Calculations & format helpers ---
+    function formatNumber(n){
+      return Number(n||0).toLocaleString(undefined,{maximumFractionDigits:0});
+    }
+
+    function computeInvestmentCurrentValue(inv, now = Date.now()){
+      const elapsedSeconds = Math.max(0, (now - inv.start) / 1000);
+      const profit = inv.principal * (inv.rate / 100) * (elapsedSeconds / 86400);
+      return { current: inv.principal + profit, profit };
+    }
+
+    function getTotals(){
+      const investments = storage.getInvestments();
+      const now = Date.now();
+      let totalCurrent = 0, totalProfit = 0, totalPrincipal = 0;
+      investments.forEach(inv=>{
+        const {current, profit} = computeInvestmentCurrentValue(inv, now);
+        totalCurrent += current;
+        totalProfit += profit;
+        totalPrincipal += inv.principal;
+      });
+      const withdrawnTotal = storage.getWithdrawnTotal();
+      const available = Math.max(0, totalCurrent - withdrawnTotal);
+      return { totalCurrent, totalProfit, totalPrincipal, available, withdrawnTotal };
+    }
+    function getAvailableBalance(){ return getTotals().available }
+
+    // --- Dashboard & UI renderers ---
+    function refreshDashboard(){
+      const { totalCurrent, totalProfit, totalPrincipal, available } = getTotals();
+      document.getElementById('totalBalance').innerText = '₦' + formatNumber(totalCurrent);
+      document.getElementById('profitSoFar').innerText = '₦' + formatNumber(totalProfit);
+      document.getElementById('totalDeposited').innerText = '₦' + formatNumber(totalPrincipal);
+      document.getElementById('avgDailyRate').innerText = computeAvgDailyRate() + '%';
+      document.getElementById('availableBalance').innerText = '₦' + formatNumber(available);
+      renderInvestmentsList();
+    }
+
+    function computeAvgDailyRate(){
+      const investments = storage.getInvestments();
+      if(!investments.length) return 0;
+      const avg = investments.reduce((s,i)=>s + i.rate, 0) / investments.length;
+      return (Math.round(avg*10)/10).toFixed(1);
+    }
+
+    function renderInvestmentsList(){
+      const investments = storage.getInvestments();
+      const el = document.getElementById('investmentsList');
+      if(!investments.length){ el.innerHTML = 'No active investments yet.'; return; }
+      const now = Date.now();
+      let html = '<ul style="list-style:none;padding-left:0;margin:0">';
+      investments.forEach(inv=>{
+        const {current, profit} = computeInvestmentCurrentValue(inv, now);
+        const depositor = inv.depositorName || 'Investor';
+        html += `<li style="margin-bottom:10px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02)">
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <div>
+                      <div style="font-weight:700">${inv.plan} — ${escapeHtml(depositor)} <span style="color:var(--muted);font-weight:600">(${inv.rate}% daily)</span></div>
+                      <div class="muted" style="font-size:0.9rem">${new Date(inv.start).toLocaleString()}</div>
+                    </div>
+                    <div style="text-align:right">
+                      <div style="font-weight:700;color:var(--accent)">₦${formatNumber(current)}</div>
+                      <div class="muted" style="font-size:0.9rem">Profit: ₦${formatNumber(profit)}</div>
+                    </div>
+                  </div>
+                 </li>`;
+      });
+      html += '</ul>';
+      el.innerHTML = html;
+    }
+
+    // --- History renderers ---
+    function renderDepositHistory(){
+      const deposits = storage.getDeposits();
+      let html = '';
+      if(!deposits.length){
+        html = `<div class="muted">No deposits yet.</div>`;
+      } else {
+        html = `<table><thead><tr><th>Date</th><th>Plan</th><th>Name</th><th>Ref</th><th>Receipt</th><th>Amount (₦)</th></tr></thead><tbody>`;
+        deposits.forEach((d, idx)=>{
+          const receiptCell = d.receiptFileName ? `<a href="${d.receiptDataUrl}" download="${escapeHtml(d.receiptFileName)}">Download</a>` : '<span class="muted">—</span>';
+          // make reference clickable to open modal to re-check
+          const refClickable = `<a href="#" data-deposit-index="${idx}" class="ref-check-link">${escapeHtml(d.refCode||'')}</a>`;
+          html += `<tr>
+                    <td>${d.date}</td>
+                    <td>${d.plan}</td>
+                    <td>${escapeHtml(d.depositorName||'')}</td>
+                    <td>${refClickable}</td>
+                    <td>${receiptCell}</td>
+                    <td>₦${formatNumber(d.amount)}</td>
+                   </tr>`;
+        });
+        html += '</tbody></table>';
+      }
+      document.getElementById('historyTables').innerHTML = `<h4 style="margin-top:10px;color:var(--accent)">Deposit History</h4>` + html;
+
+      // Attach click handlers for ref-check links
+      document.querySelectorAll('.ref-check-link').forEach(link=>{
+        link.addEventListener('click', function(evt){
+          evt.preventDefault();
+          const idx = parseInt(this.getAttribute('data-deposit-index'),10);
+          openRefCheckModalForIndex(idx);
+        });
+      });
+    }
+
+    function renderWithdrawalHistory(){
+      const withdrawals = storage.getWithdrawals();
+      let html = '';
+      if(!withdrawals.length){
+        html = `<div class="muted">No withdrawals yet.</div>`;
+      } else {
+        html = `<table><thead><tr><th>Date</th><th>Bank</th><th>Account</th><th>Amount (₦)</th></tr></thead><tbody>`;
+        withdrawals.forEach(w=> html += `<tr><td>${w.date}</td><td>${escapeHtml(w.bank)}</td><td>${escapeHtml(w.accountName)} (${escapeHtml(w.accountNumber)})</td><td>₦${formatNumber(w.amount)}</td></tr>`);
+        html += '</tbody></table>';
+      }
+      document.getElementById('historyTables').innerHTML = `<h4 style="margin-top:10px;color:var(--accent)">Withdrawal History</h4>` + html;
+    }
+
+    function renderAllHistory(){
+      const deposits = storage.getDeposits();
+      const withdrawals = storage.getWithdrawals();
+      let html = '<h4 style="margin-top:10px;color:var(--accent)">All Transactions</h4>';
+      if(!deposits.length && !withdrawals.length){
+        html += `<div class="muted">No transactions yet.</div>`;
+        document.getElementById('historyTables').innerHTML = html;
+        return;
+      }
+      const combined = [];
+      deposits.forEach((d, i) => combined.push({type:'Deposit', dateStr:d.date, dateTs:Date.parse(d.date), meta:d, idx:i}));
+      withdrawals.forEach(w => combined.push({type:'Withdrawal', dateStr:w.date, dateTs:Date.parse(w.date), meta:w}));
+      combined.sort((a,b)=> b.dateTs - a.dateTs);
+      let tbl = `<table><thead><tr><th>Date</th><th>Type</th><th>Details</th><th>Amount (₦)</th></tr></thead><tbody>`;
+      combined.forEach(item=>{
+        if(item.type === 'Deposit'){
+          const refClickable = `<a href="#" data-deposit-index="${item.idx}" class="ref-check-link">${escapeHtml(item.meta.refCode||'')}</a>`;
+          const receiptLink = item.meta.receiptFileName ? `<a href="${item.meta.receiptDataUrl}" download="${escapeHtml(item.meta.receiptFileName)}">[Receipt]</a>` : '';
+          tbl += `<tr><td>${item.dateStr}</td><td>Deposit</td><td>${refClickable} ${item.meta.plan} — ${escapeHtml(item.meta.depositorName||'')} ${receiptLink}</td><td>₦${formatNumber(item.meta.amount)}</td></tr>`;
+        } else {
+          tbl += `<tr><td>${item.dateStr}</td><td>Withdrawal</td><td>${escapeHtml(item.meta.bank)} — ${escapeHtml(item.meta.accountName)} (${escapeHtml(item.meta.accountNumber)})</td><td>₦${formatNumber(item.meta.amount)}</td></tr>`;
+        }
+      });
+      tbl += '</tbody></table>';
+      document.getElementById('historyTables').innerHTML = html + tbl;
+
+      // Attach handlers
+      document.querySelectorAll('.ref-check-link').forEach(link=>{
+        link.addEventListener('click', function(evt){
+          evt.preventDefault();
+          const idx = parseInt(this.getAttribute('data-deposit-index'),10);
+          openRefCheckModalForIndex(idx);
+        });
+      });
+    }
+
+    // --- Earnings preview (daily/weekly/monthly) ---
+    function updateEarningsPreview(){
+      const input = document.getElementById('depositAmountInput');
+      const amt = parseFloat(input.value);
+      const box = document.getElementById('earningsPreview');
+      if(!amt || !depositingRate || amt < depositingMin){
+        box.style.display = 'none';
+        return;
+      }
+      const daily = amt * (depositingRate/100);
+      const weekly = daily * 7;
+      const monthly = daily * 30;
+      document.getElementById('dailyEarning').textContent = `Daily: ₦${formatNumber(daily)}`;
+      document.getElementById('weeklyEarning').textContent = `Weekly: ₦${formatNumber(weekly)}`;
+      document.getElementById('monthlyEarning').textContent = `Monthly: ₦${formatNumber(monthly)}`;
+      box.style.display = 'block';
+    }
+
+    // --- Small utility to escape HTML (names) ---
+    function escapeHtml(text){
+      if(!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function normalizeText(t){
+      return (t||'').replace(/\s+/g,' ').trim().toLowerCase();
+    }
+
+    // --- Live updates ---
+    function startLiveUpdates(){
+      refreshDashboard();
+      setInterval(()=> refreshDashboard(), 1000); // every second
+    }
+
+    // initial render helpers
+    function refreshAll(){
+      renderDepositHistory();
+      renderAllHistory();
+      refreshDashboard();
+      renderInvestmentsList();
+    }
+
+    // start on load
+    window.addEventListener('load', ()=> {
+      startLiveUpdates();
+      refreshAll();
+      startTvNotifications(); // start notifications
+    });
+
+    // --- Notification system: bottom-center sliding, slow in/out ---
+    (function(){
+      const notifEl = document.getElementById('tvNotif');
+      const msgEl = document.getElementById('tvNotifMsg');
+
+      function formatAmt(n){ return n.toLocaleString(undefined,{maximumFractionDigits:0}); }
+      function randomAmount(){ const min=10000, max=250000; return Math.round(Math.random()*(max-min)+min); }
+      function randomName(){ return NAMES[Math.floor(Math.random()*NAMES.length)]; }
+      function randomAction(){ return Math.random()<0.55 ? 'received' : 'withdrew'; }
+
+      let notifTimer = null;
+      function showNotificationOnce(){
+        const name = randomName();
+        const action = randomAction();
+        const amt = randomAmount();
+        const emoji = action === 'received' ? '💰' : '💸';
+        const verb = action === 'received' ? 'just received' : 'just withdrew';
+        const text = `${name} ${verb} ₦${formatAmt(amt)}`;
+        notifEl.querySelector('.icon').textContent = emoji;
+        msgEl.textContent = text;
+        // show (2s enter)
+        notifEl.classList.add('show');
+        clearTimeout(notifTimer);
+        // keep visible ~3.5s, then hide (2s exit via CSS)
+        notifTimer = setTimeout(()=> notifEl.classList.remove('show'), 3500);
+      }
+
+      function startTvNotifications(){
+        setTimeout(()=> showNotificationOnce(), 1000);
+        setInterval(()=> { showNotificationOnce(); }, 5000);
+      }
+
+      window.startTvNotifications = startTvNotifications;
+    })();
+
+    // --- Center withdrawal success toast (fade + scale) ---
+    const centerToastEl = document.getElementById('centerToast');
+    const centerToastSub = document.getElementById('centerToastSub');
+    let centerToastTimeout = null;
+    function showCenterWithdrawalSuccess(amount){
+      centerToastSub.textContent = `₦${formatNumber(amount)} withdrawn successfully`;
+      centerToastEl.classList.add('show');
+      centerToastEl.setAttribute('aria-hidden','false');
+      clearTimeout(centerToastTimeout);
+      centerToastTimeout = setTimeout(()=>{
+        centerToastEl.classList.remove('show');
+        centerToastEl.setAttribute('aria-hidden','true');
+      }, 3000);
+    }
+    window.showCenterWithdrawalSuccess = showCenterWithdrawalSuccess;
+
+    // --- Center deposit success toast (white, deep white with blue text) ---
+    const centerDepositEl = document.getElementById('centerDepositToast');
+    const centerDepositTitleEl = document.getElementById('centerDepositTitle');
+    const centerDepositSub = document.getElementById('centerDepositSub');
+    let centerDepositTimeout = null;
+    function showCenterDepositSuccess(amount, titleText, subText){
+      if(titleText) centerDepositTitleEl.textContent = titleText;
+      centerDepositSub.textContent = subText || `₦${formatNumber(amount)} deposited successfully`;
+      centerDepositEl.classList.add('show');
+      centerDepositEl.setAttribute('aria-hidden','false');
+      clearTimeout(centerDepositTimeout);
+      centerDepositTimeout = setTimeout(()=>{
+        centerDepositEl.classList.remove('show');
+        centerDepositEl.setAttribute('aria-hidden','true');
+      }, 3000);
+    }
+    window.showCenterDepositSuccess = showCenterDepositSuccess;
+
+    // --- expose depositModalBtn for header -->
+    document.getElementById('depositModalBtn').addEventListener('click', ()=> openDepositModal('Manual',0,0));
+
+    // --- Reference check modal behavior ---
+    let currentRefCheckIndex = null;
+    function openRefCheckModalForIndex(idx){
+      currentRefCheckIndex = idx;
+      const deposits = storage.getDeposits();
+      const dep = deposits[idx];
+      if(!dep){
+        alert('Deposit not found');
+        return;
+      }
+      document.getElementById('refCheckInfo').innerText = `Checking deposit from ${dep.depositorName} on ${dep.date}. Receipt: ${dep.receiptFileName || '—'}`;
+      document.getElementById('refCheckInput').value = dep.refCode || '';
+      document.getElementById('refCheckResult').innerHTML = '';
+      openModal('refCheckModal');
+    }
+    function closeRefCheck(){
+      currentRefCheckIndex = null;
+      closeModal('refCheckModal');
+    }
+
+    document.getElementById('runRefCheckBtn').addEventListener('click', async function(){
+      const code = document.getElementById('refCheckInput').value.trim();
+      if(!code){ document.getElementById('refCheckResult').innerHTML = `<div class="error-msg">Enter a reference code to check</div>`; return; }
+      const deposits = storage.getDeposits();
+      const dep = deposits[currentRefCheckIndex];
+      if(!dep){ document.getElementById('refCheckResult').innerHTML = `<div class="error-msg">Deposit not found</div>`; return; }
+      if(!dep.receiptDataUrl){ document.getElementById('refCheckResult').innerHTML = `<div class="error-msg">No receipt stored for this deposit</div>`; return; }
+
+      // Convert dataURL to arrayBuffer
+      try{
+        const arrayBuffer = dataURLtoArrayBuffer(dep.receiptDataUrl);
+        const text = await pdfTextExtractFromArrayBuffer(arrayBuffer, 6);
+        const txtNorm = normalizeText(text);
+        const codeNorm = normalizeText(code);
+        const nameNorm = normalizeText(dep.depositorName || '');
+        const refFound = txtNorm.includes(codeNorm);
+        const nameFound = txtNorm.includes(nameNorm);
+        const currencyFound = /₦|\bngn\b|\bnaira\b|[0-9]{2,3}(?:[,\.][0-9]{2,})?/i.test(text);
+        const fails = [];
+        if(!refFound) fails.push('Reference code not found in PDF.');
+        if(!nameFound) fails.push('Depositor name not found in PDF.');
+        if(!currencyFound) fails.push('No obvious currency/amount found.');
+        if(fails.length){
+          document.getElementById('refCheckResult').innerHTML = `<div class="error-msg">${fails.join(' ')}</div><div style="margin-top:8px"><small>PDF text preview:</small><pre style="white-space:pre-wrap;background:#f4f6f8;padding:8px;border-radius:6px;color:#021024">${escapeHtml(text.slice(0,800))}</pre></div>`;
+        } else {
+          document.getElementById('refCheckResult').innerHTML = `<div class="success-msg">Reference and name successfully matched inside the stored PDF.</div>`;
+        }
+      }catch(err){
+        console.error(err);
+        document.getElementById('refCheckResult').innerHTML = `<div class="error-msg">Failed to read/extract text from stored PDF. It may be an image-only PDF (scanned). Validation cannot be performed on image-only PDFs here.</div>`;
+      }
+    });
+
+    // helpers for dataURL -> arrayBuffer
+    function dataURLtoArrayBuffer(dataURL){
+      const base64 = dataURL.split(',')[1];
+      const binary = atob(base64);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for(let i=0;i<len;i++){
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes.buffer;
+    }
+
+    // helper: blob -> dataURL
+    function blobToDataURL(blob){
+      return new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = ()=> res(fr.result);
+        fr.onerror = ()=> rej(new Error('FileReader failed'));
+        fr.readAsDataURL(blob);
+      });
+    }
+
+    // --- expose other previously present functions (no change) ---
+    // (Note: the following functions were present in your earlier script and remain intact.)
+    // getTotals, computeAvgDailyRate, renderInvestmentsList, etc already defined above.
+
+  </script>
+
+  <!-- PDF.js CDN loaded at end (used for extracting text for validation) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
+  <!-- Telegram Floating Icon Script (TrustVest Official) -->
+  <style>
+    /* Floating Telegram Icon */
+    .telegram-float {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #0088cc;
+      color: white;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      cursor: pointer;
+      animation: pulse 1.8s infinite, shake 3s infinite;
+      z-index: 999999 !important; /* Always on top */
+    }
+
+    .telegram-float img {
+      width: 35px;
+      height: 35px;
+    }
+
+    /* Blinking and shaking animation */
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(0,136,204,0.6); }
+      70% { box-shadow: 0 0 0 15px rgba(0,136,204,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,136,204,0); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: rotate(0deg); }
+      20% { transform: rotate(-10deg); }
+      40% { transform: rotate(10deg); }
+      60% { transform: rotate(-6deg); }
+      80% { transform: rotate(6deg); }
+    }
+  </style>
+
+  <!-- Telegram Floating Icon -->
+  <div class="telegram-float" onclick="openTelegram()">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram">
+  </div>
+
+  <script>
+    // Opens TrustVest Official Telegram directly
+    function openTelegram() {
+      window.open("https://t.me/TrustVestOfficial", "_blank");
+    }
+  </script>
+
+  <!-- Safe override attaching to the floating icon -->
+  <script>
+  (function(){
+    const TELEGRAM_URL = 'https://t.me/TrustVestofficial';
+    try { window.openTelegram = function(){ window.open(TELEGRAM_URL, '_blank'); }; } catch(e){ /* ignore */ }
+    function attachToFloatingIcon(){
+      const candidates = document.querySelectorAll('.telegram-float, [data-telegram-float], .tg-float');
+      if(!candidates || !candidates.length) return;
+      candidates.forEach(el=>{
+        try { el.removeAttribute && el.removeAttribute('onclick'); } catch(e){}
+        el.addEventListener('click', function(ev){
+          ev && ev.preventDefault && ev.preventDefault();
+          try { window.open(TELEGRAM_URL, '_blank'); } catch(err){ window.location.href = TELEGRAM_URL; }
+        }, {passive: false});
+      });
+    }
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', attachToFloatingIcon);
+    } else {
+      attachToFloatingIcon();
+    }
+    try { window.openTelegram = function(){ window.open(TELEGRAM_URL, '_blank'); }; } catch(e){ /* ignore */ }
+  })();
+  </script>
+
+  <script>
+    // Renderers & start
+    window.addEventListener('load', ()=> { refreshAll(); });
+  </script>
+</body>
+</html>
